@@ -1,0 +1,25 @@
+services:
+  postgres:
+    # Override for development - expose more ports or add debugging
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dev_rag_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+      # Uncomment for debugging
+      # - "5433:5432"
+
+  pgadmin:
+    # Development overrides
+    environment:
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_CONSOLE_LOG_LEVEL: 10  # Debug level
+
+# Optional: Add a service for database migrations or prototyping scripts
+# services:
+#   app:
+#     build: .
+#     depends_on:
+#       - postgres
+#     volumes:
+#       - ./scripts:/app/scripts
+#     command: tail -f /dev/null  # Keep container running

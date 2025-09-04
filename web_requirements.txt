@@ -1,0 +1,15 @@
+# Web Interface Requirements
+# Install these packages to run the web interface
+
+# Core web framework
+Flask==2.3.3
+Werkzeug==2.3.7
+Jinja2==3.1.2
+
+# File handling
+python-multipart==0.0.6
+
+# Additional utilities
+requests==2.31.0
+
+# Note: Also requires all packages from requirements.txt for the ingestion functionality

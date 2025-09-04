@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - Text Ingestion Interface{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-comments"></i> Chat with Your Documents</h5>
+                <small class="text-muted">Ask questions about your ingested documents</small>
+            </div>
+            <div class="card-body">
+                <!-- Chat Messages Area -->
+                <div id="chatMessages" class="chat-messages mb-3" style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem; background-color: #f8f9fa;">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-comments fa-2x mb-2"></i>
+                        <p>Start a conversation by asking a question about your documents!</p>
+                    </div>
+                </div>
+
+                <!-- Chat Input Form -->
+                <form id="chatForm" class="d-flex">
+                    <input type="text" id="chatInput" class="form-control me-2" placeholder="Ask a question about your documents..." required>
+                    <button type="submit" class="btn btn-primary" id="sendButton">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </form>
+
+                <!-- Loading Indicator -->
+                <div id="loadingIndicator" class="text-center mt-2" style="display: none;">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <small class="text-muted ms-2">Searching documents...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chat JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const sendButton = document.getElementById('sendButton');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+
+    // Add user message to chat
+    function addUserMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message user-message mb-3';
+        messageDiv.innerHTML = `
+            <div class="d-flex justify-content-end">
+                <div class="bg-primary text-white rounded p-3" style="max-width: 70%;">
+                    <strong>You:</strong> ${message}
+                </div>
+            </div>
+        `;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Add bot message to chat
+    function addBotMessage(message, results = null) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message bot-message mb-3';
+        let content = `
+            <div class="d-flex justify-content-start">
+                <div class="bg-light border rounded p-3" style="max-width: 70%;">
+                    <strong>Assistant:</strong> ${message}
+        `;
+
+        if (results && results.length > 0) {
+            content += '<hr><small class="text-muted">Relevant results:</small>';
+            results.forEach(result => {
+                content += `
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Preview:</strong> ${result.content_preview}</p>
+                        <ul class="list-unstyled mb-1">
+                            <li><strong>Score:</strong> ${result.score.toFixed(3)}</li>
+                            <li><strong>Document:</strong> ${result.document_name}</li>
+                            <li><strong>Chunk ID:</strong> ${result.chunk_id}</li>
+                            <li><strong>Embedding Dim:</strong> ${result.embedding_dim}</li>
+                        </ul>
+                        <details>
+                            <summary>Show full content</summary>
+                            <pre style="white-space:pre-wrap;">${result.content}</pre>
+                        </details>
+                    </div>
+                </div>
+                `;
+            });
+        }
+
+        content += '</div></div>';
+        messageDiv.innerHTML = content;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Handle form submission
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const query = chatInput.value.trim();
+        if (!query) return;
+
+        // Add user message
+        addUserMessage(query);
+
+        // Clear input and disable form
+        chatInput.value = '';
+        chatInput.disabled = true;
+        sendButton.disabled = true;
+        loadingIndicator.style.display = 'block';
+
+        try {
+            // Send query to API
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const results = data.data.results;
+                if (results.length > 0) {
+                    addBotMessage(`Found ${results.length} relevant results:`, results);
+                } else {
+                    addBotMessage('I couldn\'t find any relevant information in your documents for that query.');
+                }
+            } else {
+                addBotMessage(`Error: ${data.error}`);
+            }
+        } catch (error) {
+            addBotMessage('Sorry, there was an error processing your query. Please try again.');
+            console.error('Chat error:', error);
+        } finally {
+            // Re-enable form
+            chatInput.disabled = false;
+            sendButton.disabled = false;
+            loadingIndicator.style.display = 'none';
+            chatInput.focus();
+        }
+    });
+
+    // Focus input on page load
+    chatInput.focus();
+});
+</script>
+
+<style>
+.chat-messages {
+    background-color: #f8f9fa;
+}
+
+.message {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.user-message .bg-primary {
+    background-color: #007bff !important;
+}
+
+.bot-message .bg-light {
+    background-color: #ffffff !important;
+}
+</style>
+{% endblock %}

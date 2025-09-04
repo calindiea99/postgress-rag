@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Configure Ingestion - Text Ingestion Interface{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cog"></i> Configure Ingestion</h5>
+            </div>
+            <div class="card-body">
+                {% if files %}
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-files"></i> Files to Process:</h6>
+                    <ul class="mb-0">
+                        {% for file in files %}
+                        <li>{{ file }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <form method="post" id="configForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Basic Settings</h6>
+
+                            <div class="mb-3">
+                                <label for="collection_name" class="form-label">Collection Name</label>
+                                <input type="text" class="form-control" id="collection_name" name="collection_name"
+                                       value="{{ config.collection_name }}" required>
+                                <div class="form-text">Name for the vector database collection</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="embedding_model" class="form-label">Embedding Model</label>
+                                <select class="form-select" id="embedding_model" name="embedding_model">
+                                    <option value="sentence-transformer" {{ 'selected' if config.embedding_model == 'sentence-transformer' }}>Sentence Transformer</option>
+                                    <option value="openai" {{ 'selected' if config.embedding_model == 'openai' }}>OpenAI</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3" id="model_name_group">
+                                <label for="model_name" class="form-label">Model Name</label>
+                                <input type="text" class="form-control" id="model_name" name="model_name"
+                                       value="{{ config.model_name }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Processing Settings</h6>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="chunk_size" class="form-label">Chunk Size</label>
+                                        <input type="number" class="form-control" id="chunk_size" name="chunk_size"
+                                               value="{{ config.chunk_size }}" min="100" max="5000">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="chunk_overlap" class="form-label">Chunk Overlap</label>
+                                        <input type="number" class="form-control" id="chunk_overlap" name="chunk_overlap"
+                                               value="{{ config.chunk_overlap }}" min="0" max="1000">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="batch_size" class="form-label">Batch Size</label>
+                                <input type="number" class="form-control" id="batch_size" name="batch_size"
+                                       value="{{ config.batch_size }}" min="1" max="500">
+                                <div class="form-text">Number of documents to process at once</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="mb-3">Database Settings</h6>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="db_host" class="form-label">Host</label>
+                                <input type="text" class="form-control" id="db_host" name="db_host"
+                                       value="{{ config.database.host }}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="db_port" class="form-label">Port</label>
+                                <input type="number" class="form-control" id="db_port" name="db_port"
+                                       value="{{ config.database.port }}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="db_name" class="form-label">Database</label>
+                                <input type="text" class="form-control" id="db_name" name="db_name"
+                                       value="{{ config.database.database }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="db_user" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="db_user" name="db_user"
+                                       value="{{ config.database.user }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="db_password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="db_password" name="db_password"
+                                       value="{{ config.database.password }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="overwrite" name="overwrite"
+                                   {{ 'checked' if config.overwrite }}>
+                            <label class="form-check-label" for="overwrite">
+                                Overwrite existing collection
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="verbose" name="verbose"
+                                   {{ 'checked' if config.verbose }}>
+                            <label class="form-check-label" for="verbose">
+                                Verbose logging
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg" id="startBtn">
+                            <i class="fas fa-play"></i> Start Ingestion
+                        </button>
+                        <a href="{{ url_for('upload') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Upload
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('embedding_model').addEventListener('change', function(e) {
+    const modelNameGroup = document.getElementById('model_name_group');
+    const modelNameInput = document.getElementById('model_name');
+
+    if (e.target.value === 'openai') {
+        modelNameInput.value = 'text-embedding-ada-002';
+        modelNameGroup.style.display = 'none';
+    } else {
+        modelNameInput.value = 'all-MiniLM-L6-v2';
+        modelNameGroup.style.display = 'block';
+    }
+});
+
+document.getElementById('configForm').addEventListener('submit', function(e) {
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting Ingestion...';
+});
+</script>
+{% endblock %}

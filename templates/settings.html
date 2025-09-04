@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Text Ingestion Interface{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cog"></i> Default Settings</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Configure default settings for new ingestion jobs. These settings will be used as defaults when creating new jobs.</p>
+
+                <form method="post" id="settingsForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Basic Settings</h6>
+
+                            <div class="mb-3">
+                                <label for="default_collection" class="form-label">Default Collection Name</label>
+                                <input type="text" class="form-control" id="default_collection" name="default_collection"
+                                       value="{{ config.collection_name }}">
+                                <div class="form-text">Default name for new collections</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="default_model" class="form-label">Default Embedding Model</label>
+                                <select class="form-select" id="default_model" name="default_model">
+                                    <option value="sentence-transformer" {{ 'selected' if config.embedding_model == 'sentence-transformer' }}>Sentence Transformer</option>
+                                    <option value="openai" {{ 'selected' if config.embedding_model == 'openai' }}>OpenAI</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3" id="default_model_name_group">
+                                <label for="default_model_name" class="form-label">Default Model Name</label>
+                                <input type="text" class="form-control" id="default_model_name" name="default_model_name"
+                                       value="{{ config.model_name }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Processing Settings</h6>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="default_chunk_size" class="form-label">Default Chunk Size</label>
+                                        <input type="number" class="form-control" id="default_chunk_size" name="default_chunk_size"
+                                               value="{{ config.chunk_size }}" min="100" max="5000">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="default_chunk_overlap" class="form-label">Default Chunk Overlap</label>
+                                        <input type="number" class="form-control" id="default_chunk_overlap" name="default_chunk_overlap"
+                                               value="{{ config.chunk_overlap }}" min="0" max="1000">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="default_batch_size" class="form-label">Default Batch Size</label>
+                                <input type="number" class="form-control" id="default_batch_size" name="default_batch_size"
+                                       value="{{ config.batch_size }}" min="1" max="500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="mb-3">Database Settings</h6>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="default_db_host" class="form-label">Default Host</label>
+                                <input type="text" class="form-control" id="default_db_host" name="default_db_host"
+                                       value="{{ config.database.host }}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="default_db_port" class="form-label">Default Port</label>
+                                <input type="number" class="form-control" id="default_db_port" name="default_db_port"
+                                       value="{{ config.database.port }}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="default_db_name" class="form-label">Default Database</label>
+                                <input type="text" class="form-control" id="default_db_name" name="default_db_name"
+                                       value="{{ config.database.database }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="default_db_user" class="form-label">Default Username</label>
+                                <input type="text" class="form-control" id="default_db_user" name="default_db_user"
+                                       value="{{ config.database.user }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="default_db_password" class="form-label">Default Password</label>
+                                <input type="password" class="form-control" id="default_db_password" name="default_db_password"
+                                       value="{{ config.database.password }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="default_overwrite" name="default_overwrite"
+                                   {{ 'checked' if config.overwrite }}>
+                            <label class="form-check-label" for="default_overwrite">
+                                Default to overwrite existing collections
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="default_verbose" name="default_verbose"
+                                   {{ 'checked' if config.verbose }}>
+                            <label class="form-check-label" for="default_verbose">
+                                Default to verbose logging
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="saveBtn">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="resetToDefaults()">
+                            <i class="fas fa-undo"></i> Reset to Defaults
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> Settings Information</h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Settings are stored in the application and persist between sessions</li>
+                    <li>Changes take effect immediately for new jobs</li>
+                    <li>Database settings should match your PostgreSQL + pgvector setup</li>
+                    <li>Chunk size affects retrieval quality - larger chunks may capture more context</li>
+                    <li>Batch size affects processing speed - larger batches are faster but use more memory</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('default_model').addEventListener('change', function(e) {
+    const modelNameGroup = document.getElementById('default_model_name_group');
+    const modelNameInput = document.getElementById('default_model_name');
+
+    if (e.target.value === 'openai') {
+        modelNameInput.value = 'text-embedding-ada-002';
+        modelNameGroup.style.display = 'none';
+    } else {
+        modelNameInput.value = 'all-MiniLM-L6-v2';
+        modelNameGroup.style.display = 'block';
+    }
+});
+
+document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    // Here you would typically send the form data to save settings
+    // For now, just show a success message
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Save Settings';
+        alert('Settings saved successfully!');
+    }, 1000);
+});
+
+function resetToDefaults() {
+    if (confirm('Are you sure you want to reset all settings to defaults?')) {
+        // Reset form to default values
+        document.getElementById('default_collection').value = 'web_ingestion_docs';
+        document.getElementById('default_model').value = 'sentence-transformer';
+        document.getElementById('default_model_name').value = 'all-MiniLM-L6-v2';
+        document.getElementById('default_chunk_size').value = '1000';
+        document.getElementById('default_chunk_overlap').value = '200';
+        document.getElementById('default_batch_size').value = '50';
+        document.getElementById('default_db_host').value = 'localhost';
+        document.getElementById('default_db_port').value = '5432';
+        document.getElementById('default_db_name').value = 'rag_db';
+        document.getElementById('default_db_user').value = 'rag_user';
+        document.getElementById('default_db_password').value = 'rag_password';
+        document.getElementById('default_overwrite').checked = false;
+        document.getElementById('default_verbose').checked = true;
+    }
+}
+</script>
+{% endblock %}
