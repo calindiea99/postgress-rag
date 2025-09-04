@@ -26,7 +26,7 @@ from typing import Dict, List, Any
 import logging
 
 # Flask imports
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, send_from_directory, session
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
@@ -281,6 +281,7 @@ class IngestionManager:
 
 # Initialize Flask app
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-secret-key')
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 app.config['UPLOAD_FOLDER'] = Path('./uploads')
@@ -294,8 +295,9 @@ DEFAULT_CONFIG = {
     'chunk_size': 1000,
     'chunk_overlap': 200,
     'batch_size': 50,
-    'embedding_model': 'sentence-transformer',
-    'model_name': 'all-MiniLM-L6-v2',
+    'embedding_model': 'cohere',
+    # Default to embed-multilingual-v3.0 for Cohere
+    'model_name': 'embed-multilingual-v3.0',
     'database': {
         'host': 'localhost',
         'port': 5432,
@@ -445,10 +447,20 @@ def jobs():
     jobs_sorted = sorted(jobs, key=lambda x: x['created_at'], reverse=True)
     return render_template('jobs.html', jobs=jobs_sorted)
 
-@app.route('/settings')
+@app.route('/settings', methods=['GET', 'POST'])
 def settings():
     """Settings page."""
-    return render_template('settings.html', config=DEFAULT_CONFIG)
+    if request.method == 'POST':
+        # Save embedding model and model name to session
+        session['embedding_model'] = request.form.get('default_model', DEFAULT_CONFIG['embedding_model'])
+        session['model_name'] = request.form.get('default_model_name', DEFAULT_CONFIG['model_name'])
+        flash('Settings updated!', 'success')
+        return redirect(url_for('settings'))
+    # Use session values if set, else default
+    config = DEFAULT_CONFIG.copy()
+    config['embedding_model'] = session.get('embedding_model', config['embedding_model'])
+    config['model_name'] = session.get('model_name', config['model_name'])
+    return render_template('settings.html', config=config)
 
 @app.route('/chat')
 def chat():
@@ -481,19 +493,19 @@ def api_chat():
         from ingestion import TextIngestionPipeline
 
         # Create a temporary pipeline to query the vector store
-        # Use the same config as the web interface
+        # Use the same config as the web interface, but override with session settings if present
         config = DEFAULT_CONFIG.copy()
         config['input_dir'] = Path('./uploads')  # Ensure it's a Path object
+        config['embedding_model'] = session.get('embedding_model', config['embedding_model'])
+        config['model_name'] = session.get('model_name', config['model_name'])
 
         # Initialize pipeline and vector store for querying
         pipeline = TextIngestionPipeline(config)
-        
         # Initialize only what's needed for querying
         pipeline.validate_config()
         pipeline.setup_database_connection()
         pipeline.setup_embeddings()
         pipeline.create_vectorstore()
-
 
         # Query the vector store
         results = pipeline.vectorstore.similarity_search_with_score(query, k=5)

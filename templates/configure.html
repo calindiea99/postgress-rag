@@ -38,14 +38,15 @@
                                 <select class="form-select" id="embedding_model" name="embedding_model">
                                     <option value="sentence-transformer" {{ 'selected' if config.embedding_model == 'sentence-transformer' }}>Sentence Transformer</option>
                                     <option value="openai" {{ 'selected' if config.embedding_model == 'openai' }}>OpenAI</option>
-                                    <option value="cohere" {{ 'selected' if config.embedding_model == 'cohere' }}>Cohere</option>
+                                    <option value="cohere" {{ 'selected' if config.embedding_model == 'cohere' }}>Cohere (supports embed-multilingual-v3.0)</option>
                                 </select>
                             </div>
 
                             <div class="mb-3" id="model_name_group">
                                 <label for="model_name" class="form-label">Model Name</label>
-                                <input type="text" class="form-control" id="model_name" name="model_name"
-                                       value="{{ config.model_name }}">
+                    <input type="text" class="form-control" id="model_name" name="model_name"
+                        value="{{ config.model_name }}" placeholder="e.g. all-MiniLM-L6-v2, embed-multilingual-v3.0 (for Cohere)">
+                    <div class="form-text">For Cohere, try <code>embed-multilingual-v3.0</code> for multilingual support.</div>
                             </div>
                         </div>
 
