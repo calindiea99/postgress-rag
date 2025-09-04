@@ -29,6 +29,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 from langchain_community.embeddings import SentenceTransformerEmbeddings
 from langchain_openai import OpenAIEmbeddings
+# Use new CohereEmbeddings from langchain_cohere
+try:
+    from langchain_cohere import CohereEmbeddings
+except ImportError:
+    CohereEmbeddings = None
 
 
 class TextIngestionPipeline:
@@ -95,6 +100,19 @@ class TextIngestionPipeline:
         elif self.config['embedding_model'] == 'sentence-transformer':
             self.embeddings = SentenceTransformerEmbeddings(
                 model_name=self.config['model_name']
+            )
+        elif self.config['embedding_model'] == 'cohere':
+            if CohereEmbeddings is None:
+                raise ImportError("langchain-cohere is not installed. Please run 'pip install -U langchain-cohere'.")
+            cohere_api_key = self.config.get('cohere_api_key') or os.getenv('COHERE_API_KEY')
+            model_name = self.config.get('model_name', 'embed-multilingual-v3.0')
+            user_agent = self.config.get('user_agent', 'postgres-rag-app/1.0')
+            if not cohere_api_key:
+                raise ValueError("COHERE_API_KEY environment variable or config required for Cohere embeddings")
+            self.embeddings = CohereEmbeddings(
+                model=model_name,
+                cohere_api_key=cohere_api_key,
+                user_agent=user_agent
             )
         else:
             raise ValueError(f"Unsupported embedding model: {self.config['embedding_model']}")
@@ -795,8 +813,8 @@ Examples:
                        help='Number of documents to process in each batch (default: 100)')
 
     # Embedding options
-    parser.add_argument('--model', dest='embedding_model', choices=['sentence-transformer', 'openai'],
-                       default='sentence-transformer', help='Embedding model to use (default: sentence-transformer)')
+    parser.add_argument('--model', dest='embedding_model', choices=['sentence-transformer', 'openai', 'cohere'],
+                       default='sentence-transformer', help='Embedding model to use (sentence-transformer, openai, cohere; default: sentence-transformer)')
     parser.add_argument('--model-name', default='all-MiniLM-L6-v2',
                        help='Model name for sentence transformer (default: all-MiniLM-L6-v2)')
 

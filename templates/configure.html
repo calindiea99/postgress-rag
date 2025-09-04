@@ -38,6 +38,7 @@
                                 <select class="form-select" id="embedding_model" name="embedding_model">
                                     <option value="sentence-transformer" {{ 'selected' if config.embedding_model == 'sentence-transformer' }}>Sentence Transformer</option>
                                     <option value="openai" {{ 'selected' if config.embedding_model == 'openai' }}>OpenAI</option>
+                                    <option value="cohere" {{ 'selected' if config.embedding_model == 'cohere' }}>Cohere</option>
                                 </select>
                             </div>
 
